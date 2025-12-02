@@ -69,7 +69,6 @@ dependencies {
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     // Gson Converter (Để tự động chuyển JSON thành Object Kotlin)
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
-
-
+    implementation("org.postgresql:postgresql:42.2.5")
 
 }

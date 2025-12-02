@@ -13,6 +13,8 @@ import java.util.Locale
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
+import kotlinx.coroutines.Dispatchers // Nhớ thêm dòng này
+import kotlinx.coroutines.withContext
 
 // --- 1. DATA MODEL CHO GIAO DỊCH ---
 data class ExpenseTransaction(
@@ -66,18 +68,23 @@ class HomeViewModel : ViewModel() {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                Log.d("HomeViewModel", "Đang gọi API...")
-                val rawTransactions = RetrofitClient.apiService.getTransactions()
-                Log.d("HomeViewModel", "Đã lấy được ${rawTransactions.size} giao dịch")
+                Log.d("HomeViewModel", "Đang kết nối Database...")
 
-                // 1. Lưu toàn bộ dữ liệu vào Cache (Bộ nhớ tạm)
+                // --- THAY ĐỔI Ở ĐÂY: Chuyển sang luồng IO để gọi JDBC ---
+                val rawTransactions = withContext(Dispatchers.IO) {
+                    DatabaseHelper.getAllTransactions()
+                }
+
+                Log.d("HomeViewModel", "Đã lấy được ${rawTransactions.size} giao dịch từ Postgres")
+
+                // 1. Lưu toàn bộ dữ liệu vào Cache
                 allTransactionsCache = rawTransactions
 
-                // 2. Tính toán lại dữ liệu cho tháng hiện tại
+                // 2. Tính toán lại dữ liệu
                 recalculateDataByMonth()
 
             } catch (e: Exception) {
-                Log.e("HomeViewModel", "Lỗi gọi API: ${e.message}")
+                Log.e("HomeViewModel", "Lỗi lấy dữ liệu: ${e.message}")
                 e.printStackTrace()
                 _transactions.value = emptyList()
                 _chartData.value = emptyList()
@@ -87,7 +94,6 @@ class HomeViewModel : ViewModel() {
             }
         }
     }
-
     // --- MỚI: Hàm đổi tháng (Khi bấm nút < hoặc >) ---
     fun changeMonth(monthsToAdd: Long) {
         _currentMonth.value = _currentMonth.value.plusMonths(monthsToAdd)
