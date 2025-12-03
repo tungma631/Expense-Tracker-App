@@ -2,18 +2,35 @@ package com.example.expensetrackerapp.ui.guide
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.AccountBalanceWallet
-import androidx.compose.material.icons.filled.Analytics
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -24,26 +41,29 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.expensetrackerapp.data.network.RetrofitInstance
 import com.example.expensetrackerapp.ui.theme.PrimaryBlue
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
-// 1. Dữ liệu cho từng trang hướng dẫn
+
 data class GuidePage(
     val title: String,
     val description: String,
-    val icon: ImageVector // Dùng Icon có sẵn để demo, bạn có thể đổi thành R.drawable.anh_cua_ban
+    val icon: ImageVector
 )
 
 val guidePages = listOf(
     GuidePage(
         "Quản lý chi tiêu",
         "Ghi chép thu chi hàng ngày dễ dàng, giúp bạn kiểm soát dòng tiền hiệu quả.",
-        Icons.Default.AccountBalanceWallet
+        Icons.Default.Home
     ),
     GuidePage(
         "Báo cáo chi tiết",
         "Xem biểu đồ thống kê trực quan để hiểu rõ thói quen tiêu dùng của bạn.",
-        Icons.Default.Analytics
+        Icons.AutoMirrored.Filled.List
     ),
     GuidePage(
         "An toàn & Bảo mật",
@@ -56,13 +76,30 @@ val guidePages = listOf(
 @Composable
 fun GuideScreen(navController: NavController) {
     val pagerState = rememberPagerState(pageCount = { guidePages.size })
-    val scope = rememberCoroutineScope() // Dùng để điều khiển việc trượt trang bằng code
+    val scope = rememberCoroutineScope()
+
+    // --- QUAN TRỌNG: GỌI API ĐÁNH THỨC SERVER ---
+    LaunchedEffect(Unit) {
+        // Chạy trên luồng IO để không làm đơ giao diện
+        withContext(Dispatchers.IO) {
+            try {
+                // Gọi API wakeUpServer (đã định nghĩa trong ApiService)
+                // Mục đích: Để Server Render khởi động trong lúc user đang đọc hướng dẫn
+                val response = RetrofitInstance.api.wakeUpServer()
+                println("Wake-up call sent: ${response.code()}")
+            } catch (e: Exception) {
+                // Không quan trọng lỗi gì, chỉ cần gửi request đi là được
+                println("Wake-up call error (ignored): ${e.message}")
+            }
+        }
+    }
+    // ----------------------------------------------
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(24.dp)
-            .background(Color.White) // Nền trắng sạch sẽ
+            .background(Color.White)
     ) {
         // --- Nút Skip (Góc trên phải) ---
         Row(
@@ -70,7 +107,6 @@ fun GuideScreen(navController: NavController) {
             horizontalArrangement = Arrangement.End
         ) {
             TextButton(onClick = {
-                // Bấm Skip thì nhảy thẳng vào Login
                 navController.navigate("login_screen") {
                     popUpTo("guide_screen") { inclusive = true }
                 }
@@ -81,7 +117,7 @@ fun GuideScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(20.dp))
 
-
+        // --- PHẦN CHÍNH: SLIDER (Pager) ---
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.weight(1f)
@@ -91,7 +127,7 @@ fun GuideScreen(navController: NavController) {
                 verticalArrangement = Arrangement.Center,
                 modifier = Modifier.fillMaxSize()
             ) {
-
+                // Vùng chứa Icon
                 Box(
                     modifier = Modifier
                         .size(280.dp)
@@ -108,7 +144,7 @@ fun GuideScreen(navController: NavController) {
 
                 Spacer(modifier = Modifier.height(40.dp))
 
-
+                // Tiêu đề
                 Text(
                     text = guidePages[page].title,
                     fontSize = 28.sp,
@@ -119,7 +155,7 @@ fun GuideScreen(navController: NavController) {
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-
+                // Mô tả
                 Text(
                     text = guidePages[page].description,
                     fontSize = 16.sp,
@@ -131,7 +167,7 @@ fun GuideScreen(navController: NavController) {
             }
         }
 
-
+        // --- PHẦN CHÂN TRANG (Indicators + Nút Next) ---
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -139,7 +175,7 @@ fun GuideScreen(navController: NavController) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-
+            // 1. Indicators (Các chấm tròn)
             Row {
                 repeat(guidePages.size) { iteration ->
                     val color = if (pagerState.currentPage == iteration) PrimaryBlue else Color.LightGray
@@ -148,23 +184,23 @@ fun GuideScreen(navController: NavController) {
                     Box(
                         modifier = Modifier
                             .padding(4.dp)
-                            .clip(RoundedCornerShape(50)) // Bo tròn
+                            .clip(RoundedCornerShape(50))
                             .background(color)
                             .height(10.dp)
-                            .width(width) // Chấm hiện tại sẽ dài hơn
+                            .width(width)
                     )
                 }
             }
 
-
+            // 2. Nút Next / Get Started
             Button(
                 onClick = {
                     scope.launch {
                         if (pagerState.currentPage < guidePages.size - 1) {
-                            // Nếu chưa phải trang cuối -> Trượt sang trang tiếp theo
+                            // Chưa đến trang cuối -> Trượt tiếp
                             pagerState.animateScrollToPage(pagerState.currentPage + 1)
                         } else {
-                            // Nếu là trang cuối -> Chuyển sang Login
+                            // Đã đến trang cuối -> Vào Login
                             navController.navigate("login_screen") {
                                 popUpTo("guide_screen") { inclusive = true }
                             }
