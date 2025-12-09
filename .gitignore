@@ -13,3 +13,6 @@
 .externalNativeBuild
 .cxx
 local.properties
+my_keystore
+app/release/
+.idea/

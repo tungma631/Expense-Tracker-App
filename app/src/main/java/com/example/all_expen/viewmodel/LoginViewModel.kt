@@ -35,7 +35,7 @@ class LoginViewModel : ViewModel() {
 
                     _loginState.value = LoginState.Success
                 } else {
-                    _loginState.value = LoginState.Error("Sai email hoặc mật khẩu")
+                    _loginState.value = LoginState.Error("Sai tên đăng nhập hoặc mật khẩu")
                 }
             } catch (e: Exception) {
                 _loginState.value = LoginState.Error("Lỗi kết nối: ${e.message}")

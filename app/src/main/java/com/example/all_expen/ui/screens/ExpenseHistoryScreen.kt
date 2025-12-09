@@ -92,7 +92,7 @@ fun ExpenseHistoryScreen() {
     val currentUserId = CurrentUser.id
 
     LaunchedEffect(fromDate, toDate) {
-        // Nếu chưa đăng nhập thì không tải gì cả
+
         if (currentUserId == null) {
             isLoading = false
             return@LaunchedEffect
